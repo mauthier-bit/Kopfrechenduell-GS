@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Kopfrechen-Duell · Grundschule</title>
+<style>
+:root{
+  --bg-0:#0a0f2e; --bg-1:#131a46;
+  --panel:#161d4d; --panel-2:#1d2666; --line:#2d3780;
+  --ink:#eef1ff; --muted:#98a1d4;
+  --a:#22d3ee; --a-deep:#0e7490; --a-glow:rgba(34,211,238,.55);
+  --b:#fb7185; --b-deep:#be123c; --b-glow:rgba(251,113,133,.55);
+  --easy:#34d399; --easy-deep:#047857;
+  --hard:#fbbf24; --hard-deep:#b45309;
+  --radius:20px;
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(1200px 700px at 18% -10%, rgba(34,211,238,.10), transparent 60%),
+    radial-gradient(1200px 700px at 82% -10%, rgba(251,113,133,.10), transparent 60%),
+    linear-gradient(160deg,var(--bg-0),var(--bg-1));
+  background-attachment:fixed;
+  user-select:none; -webkit-user-select:none;
+  touch-action:manipulation;
+  overflow:hidden;
+}
+.app{display:flex; flex-direction:column; height:100dvh; padding:clamp(8px,1.4vw,16px); gap:clamp(8px,1.2vw,14px);}
+
+/* ---------- Top bar ---------- */
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex:0 0 auto;}
+.brand{display:flex; align-items:baseline; gap:10px;}
+.brand h1{margin:0; font-size:clamp(1.05rem,2.4vw,1.7rem); font-weight:800; letter-spacing:-.02em;}
+.brand .spark{color:var(--hard);}
+.brand .sub{color:var(--muted); font-size:.8rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
+.top-actions{display:flex; gap:10px;}
+.icon-btn{
+  appearance:none; border:1px solid var(--line); background:var(--panel);
+  color:var(--ink); border-radius:14px; padding:10px 16px; font-size:.95rem; font-weight:700;
+  cursor:pointer; transition:transform .08s ease, background .15s, border-color .15s;
+}
+.icon-btn:hover{background:var(--panel-2); border-color:#3a45a0;}
+.icon-btn:active{transform:scale(.96);}
+
+/* ---------- Main row ---------- */
+.main{flex:1 1 auto; min-height:0; display:flex; gap:clamp(8px,1.2vw,16px);}
+
+/* ---------- Team panels (= buzzers) ---------- */
+.team{
+  flex:1 1 0; min-width:0;
+  display:flex; flex-direction:column; align-items:center;
+  border-radius:var(--radius); border:2px solid var(--line);
+  background:linear-gradient(180deg,var(--panel),rgba(13,17,46,.6));
+  padding:clamp(10px,1.6vw,20px) clamp(8px,1.2vw,16px);
+  position:relative; overflow:hidden;
+  transition:border-color .2s, box-shadow .2s, transform .08s, background .2s;
+}
+.team[data-side="A"]{--tc:var(--a); --tc-deep:var(--a-deep); --tc-glow:var(--a-glow);}
+.team[data-side="B"]{--tc:var(--b); --tc-deep:var(--b-deep); --tc-glow:var(--b-glow);}
+.team .tname{font-weight:800; font-size:clamp(1rem,2.2vw,1.55rem); color:var(--tc); letter-spacing:-.01em; text-align:center;}
+.team .score{font-size:clamp(3rem,9vw,6.2rem); font-weight:900; line-height:.9; font-variant-numeric:tabular-nums; margin:.1em 0 .05em; text-shadow:0 6px 24px var(--tc-glow);}
+.team .togo{color:var(--muted); font-size:.85rem; font-weight:700; min-height:1.2em;}
+.stairs{flex:1 1 auto; width:100%; min-height:0; margin-top:clamp(6px,1vw,12px); display:flex; align-items:flex-end;}
+.stairs svg{width:100%; height:100%; display:block;}
+
+/* buzzer state */
+.team.buzzable{cursor:pointer; border-color:var(--tc); box-shadow:0 0 0 2px var(--tc-glow), 0 0 40px var(--tc-glow) inset;}
+.team.buzzable:active{transform:scale(.985);}
+.team.buzzable .buzzhint{opacity:1;}
+.team .buzzhint{
+  position:absolute; left:50%; bottom:clamp(10px,2vw,18px); transform:translateX(-50%);
+  background:var(--tc); color:#06122a; font-weight:900; letter-spacing:.06em;
+  padding:8px 18px; border-radius:999px; font-size:clamp(.8rem,1.6vw,1.05rem);
+  opacity:0; transition:opacity .2s; pointer-events:none; text-transform:uppercase;
+  box-shadow:0 8px 24px var(--tc-glow);
+}
+.team.active{border-color:var(--tc); box-shadow:0 0 0 3px var(--tc), 0 0 60px var(--tc-glow); background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 14%,var(--panel)),rgba(13,17,46,.6));}
+.team.dim{opacity:.5;}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--tc),0 0 90px var(--tc-glow);}100%{box-shadow:0 0 0 2px var(--tc-glow);}}
+.team.flash{animation:flash .5s ease;}
+
+/* ---------- Center stage ---------- */
+.stage{
+  flex:1.35 1 0; min-width:0;
+  display:flex; flex-direction:column; align-items:center; gap:clamp(8px,1.3vw,16px);
+  border-radius:var(--radius); border:2px solid var(--line);
+  background:linear-gradient(180deg,rgba(22,29,77,.85),rgba(11,15,40,.7));
+  padding:clamp(12px,1.8vw,24px); position:relative; overflow:hidden;
+}
+.badge{
+  display:inline-flex; align-items:center; gap:8px; padding:7px 16px; border-radius:999px;
+  font-weight:800; font-size:clamp(.78rem,1.5vw,1rem); letter-spacing:.02em;
+  border:1.5px solid; min-height:34px;
+}
+.badge.easy{color:var(--easy); border-color:var(--easy); background:color-mix(in srgb,var(--easy) 12%,transparent);}
+.badge.hard{color:var(--hard); border-color:var(--hard); background:color-mix(in srgb,var(--hard) 12%,transparent);}
+.badge .dot{width:9px; height:9px; border-radius:50%; background:currentColor;}
+.area-label{color:var(--muted); font-weight:700; font-size:.82rem; letter-spacing:.05em; text-transform:uppercase; min-height:1em;}
+
+.problem{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center; text-align:center;
+  font-size:clamp(2.2rem,6.5vw,5rem); font-weight:800; line-height:1.15;
+  padding:clamp(8px,2vw,22px) 6px; min-height:clamp(80px,16vh,150px); width:100%;
+}
+.problem.placeholder{color:var(--muted); font-size:clamp(1.1rem,2.6vw,1.7rem); font-weight:600;}
+
+/* math notation (Brüche, Wurzeln, Exponenten) — im Aufgabenfeld UND in der Lösung */
+.problem sup,.solution sup{font-size:.52em; vertical-align:.78em; font-weight:800; margin-left:.04em; line-height:0;}
+.problem sub,.solution sub{font-size:.5em; vertical-align:-.62em; font-weight:800; line-height:0;}
+.problem .fit,.solution .fit{display:inline-block; white-space:nowrap; transform-origin:center center; flex:0 0 auto;}
+.frac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .12em; line-height:1;}
+.frac .fr-n{padding:0 .25em;}
+.frac .fr-d{padding:.06em .25em 0; border-top:.08em solid currentColor;}
+.root{display:inline-flex; align-items:flex-start; white-space:nowrap;}
+.root .rsign{font-size:1.05em; margin-right:-.04em; transform:translateY(-.02em);}
+.root .radicand{border-top:.08em solid currentColor; padding:.06em .12em 0;}
+.num{padding:0 .04em;}
+
+/* countdown */
+.timerwrap{width:100%; max-width:560px; display:flex; flex-direction:column; align-items:center; gap:6px; min-height:0;}
+.timerwrap.hidden,.keypad.hidden,.ansrow.hidden,.solution.hidden,.reveal-btn.hidden{display:none !important;}
+.timebar{width:100%; height:14px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden;}
+.timebar > i{display:block; height:100%; width:100%; border-radius:999px; background:var(--easy); transition:background .2s linear;}
+.timenum{font-weight:900; font-size:clamp(1rem,2.4vw,1.5rem); font-variant-numeric:tabular-nums;}
+
+/* answer display + keypad */
+.ansrow{
+  width:100%; max-width:560px; display:flex; align-items:center; justify-content:center;
+  min-height:clamp(48px,7vh,66px); border-radius:14px; border:2px solid var(--ac,var(--line));
+  background:rgba(0,0,0,.25); font-size:clamp(1.6rem,4vw,2.6rem); font-weight:800;
+  font-variant-numeric:tabular-nums; letter-spacing:.02em; padding:0 18px; color:var(--ink);
+}
+.ansrow .ph{color:var(--muted); font-weight:600; font-size:.55em; letter-spacing:.04em;}
+.keypad{
+  width:100%; max-width:420px; display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(6px,1vw,10px);
+}
+.key{
+  appearance:none; border:1.5px solid var(--line); background:var(--panel-2); color:var(--ink);
+  border-radius:14px; font-size:clamp(1.2rem,3vw,1.7rem); font-weight:800;
+  padding:clamp(8px,1.6vh,18px) 0; cursor:pointer; transition:transform .06s, background .12s, border-color .12s;
+}
+.key:hover{background:#27316f;}
+.key:active{transform:scale(.94);}
+.key.fn{color:var(--muted); font-size:clamp(1rem,2.4vw,1.4rem);}
+.key.ok{background:var(--ac,var(--easy)); color:#06122a; border-color:transparent; font-weight:900; box-shadow:0 8px 22px rgba(0,0,0,.3);}
+.key.okwide{grid-column:1 / -1;}
+.key.ok:hover{filter:brightness(1.06);}
+
+.status{font-weight:800; font-size:clamp(1rem,2.4vw,1.45rem); text-align:center; min-height:1.4em; letter-spacing:-.01em;}
+.status.good{color:var(--easy);} .status.bad{color:var(--b);} .status.neutral{color:var(--ink);}
+.solution{text-align:center; color:var(--muted); font-weight:600; font-size:clamp(.85rem,1.8vw,1.05rem); line-height:1.4;}
+.solution b{color:var(--ink); font-weight:800;}
+.reveal-btn{appearance:none; background:none; border:none; color:var(--muted); font-weight:700; font-size:.85rem; text-decoration:underline; cursor:pointer; padding:4px;}
+.reveal-btn:hover{color:var(--ink);}
+
+/* ---------- Bottom bar ---------- */
+.bottombar{flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:14px;}
+.cta{
+  appearance:none; border:none; cursor:pointer; border-radius:16px;
+  padding:clamp(12px,1.8vh,20px) clamp(22px,4vw,46px); font-size:clamp(1.05rem,2.4vw,1.5rem); font-weight:900;
+  color:#06122a; background:linear-gradient(135deg,#fde68a,var(--hard)); box-shadow:0 12px 30px rgba(251,191,36,.35);
+  letter-spacing:-.01em; transition:transform .08s, filter .15s;
+}
+.cta:hover{filter:brightness(1.05);}
+.cta:active{transform:scale(.97);}
+.cta.ghost{background:var(--panel); color:var(--ink); border:1px solid var(--line); box-shadow:none; font-weight:800; padding:clamp(10px,1.5vh,16px) clamp(16px,3vw,28px); font-size:clamp(.9rem,2vw,1.1rem);}
+.cta.ghost:hover{background:var(--panel-2);}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed; inset:0; background:rgba(5,8,24,.72); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+.overlay.hidden{display:none;}
+.modal{
+  width:min(680px,96vw); max-height:92vh; overflow:auto; border-radius:24px;
+  border:1px solid var(--line); background:linear-gradient(180deg,var(--panel),var(--bg-1));
+  box-shadow:var(--shadow); padding:clamp(18px,3vw,30px);
+}
+.modal h2{margin:0 0 4px; font-size:1.5rem; font-weight:800;}
+.modal .lead{color:var(--muted); margin:0 0 22px; font-weight:600;}
+.field{margin-bottom:20px;}
+.field > label.lbl{display:block; font-weight:800; margin-bottom:8px; font-size:.98rem;}
+.field .help{color:var(--muted); font-size:.82rem; font-weight:600; margin-top:6px;}
+.checks{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px;}
+.chk{display:flex; align-items:center; gap:10px; padding:11px 13px; border:1.5px solid var(--line); border-radius:12px; background:var(--panel); cursor:pointer; font-weight:700; transition:border-color .15s, background .15s;}
+.chk input{width:20px; height:20px; accent-color:var(--a); cursor:pointer;}
+.chk:hover{border-color:#3a45a0;}
+.chk.disabled{opacity:.4; cursor:not-allowed;}
+.chk.disabled input{cursor:not-allowed;}
+.seg{display:inline-flex; border:1.5px solid var(--line); border-radius:12px; overflow:hidden; background:var(--panel);}
+.seg button{appearance:none; border:none; background:none; color:var(--muted); font-weight:800; padding:11px 18px; cursor:pointer; font-size:.95rem; transition:background .15s, color .15s;}
+.seg button.on{background:var(--panel-2); color:var(--ink);}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.inp{width:100%; border:1.5px solid var(--line); background:var(--panel); color:var(--ink); border-radius:12px; padding:12px 14px; font-size:1.05rem; font-weight:700; font-family:inherit;}
+.inp:focus{outline:none; border-color:var(--a);}
+.stepper{display:inline-flex; align-items:center; gap:0; border:1.5px solid var(--line); border-radius:12px; overflow:hidden; background:var(--panel);}
+.stepper button{appearance:none; border:none; background:var(--panel-2); color:var(--ink); width:46px; height:46px; font-size:1.4rem; font-weight:900; cursor:pointer;}
+.stepper button:active{background:#2b3578;}
+.stepper input{width:64px; text-align:center; border:none; background:none; color:var(--ink); font-size:1.2rem; font-weight:800; font-family:inherit;}
+.stepper input:focus{outline:none;}
+.switch{display:flex; align-items:center; gap:12px; font-weight:700;}
+.switch input{width:46px; height:26px; appearance:none; background:var(--line); border-radius:999px; position:relative; cursor:pointer; transition:background .2s;}
+.switch input:checked{background:var(--a-deep);}
+.switch input::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .2s;}
+.switch input:checked::after{transform:translateX(20px);}
+.modal-actions{display:flex; justify-content:flex-end; gap:12px; margin-top:8px;}
+
+/* ---------- Win overlay ---------- */
+.win{position:fixed; inset:0; z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; background:rgba(5,8,24,.86); backdrop-filter:blur(8px);}
+.win.hidden{display:none;}
+.win .trophy{font-size:clamp(4rem,14vw,9rem); animation:pop .6s cubic-bezier(.2,1.4,.4,1) both;}
+@keyframes pop{0%{transform:scale(0) rotate(-20deg);}100%{transform:scale(1) rotate(0);}}
+.win h2{margin:0; font-size:clamp(2rem,7vw,4rem); font-weight:900; letter-spacing:-.02em;}
+.win .final{color:var(--muted); font-size:clamp(1rem,2.6vw,1.4rem); font-weight:700;}
+.win .final .pa{color:var(--a);} .win .final .pb{color:var(--b);}
+.win-actions{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:10px;}
+.confetti{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:59;}
+.confetti i{position:absolute; top:-12px; width:11px; height:16px; border-radius:2px; animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(108vh) rotate(720deg);}}
+
+@media (max-width:760px){
+  .main{flex-direction:column;}
+  .team{flex-direction:row; align-items:center; justify-content:space-between; padding:10px 16px;}
+  .team .stairs{height:70px; max-width:46%;}
+  .team .score{font-size:3.2rem;}
+  .stage{order:-1;}
+  .row2{grid-template-columns:1fr;}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important; transition-duration:.001ms !important;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Kopfrechen<span class="spark">·</span>Duell</h1>
+      <span class="sub">Grundschule · Jgst. 3 &amp; 4</span>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnSolution">Lösung</button>
+      <button class="icon-btn" id="btnSettings">⚙ Einstellungen</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Team A -->
+    <div class="team" data-side="A" id="teamA" role="button" tabindex="0" aria-label="Buzzer Team A">
+      <div class="tname" id="nameA">Team A</div>
+      <div class="score" id="scoreA">0</div>
+      <div class="togo" id="togoA"></div>
+      <div class="stairs" id="stairsA"></div>
+      <div class="buzzhint">Buzzern</div>
+    </div>
+
+    <!-- Stage -->
+    <div class="stage">
+      <div class="badge easy" id="badge"><span class="dot"></span><span id="badgeText">Leicht · 1 Punkt</span></div>
+      <div class="area-label" id="areaLabel"></div>
+      <div class="problem placeholder" id="problem">Tippe auf »Neue Aufgabe«, um zu starten.</div>
+
+      <div class="timerwrap hidden" id="timerwrap">
+        <div class="timebar"><i id="timebar"></i></div>
+        <div class="timenum" id="timenum">8</div>
+      </div>
+
+      <div class="ansrow hidden" id="ansrow"><span class="ph" id="ansph">Antwort eingeben …</span></div>
+
+      <div class="keypad hidden" id="keypad"></div>
+
+      <div class="status neutral" id="status"></div>
+      <div class="solution hidden" id="solution"></div>
+      <button class="reveal-btn hidden" id="revealInline">Lösung anzeigen &amp; Runde beenden</button>
+    </div>
+
+    <!-- Team B -->
+    <div class="team" data-side="B" id="teamB" role="button" tabindex="0" aria-label="Buzzer Team B">
+      <div class="tname" id="nameB">Team B</div>
+      <div class="score" id="scoreB">0</div>
+      <div class="togo" id="togoB"></div>
+      <div class="stairs" id="stairsB"></div>
+      <div class="buzzhint">Buzzern</div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <button class="cta" id="btnNew">Neue Aufgabe</button>
+    <button class="cta ghost" id="btnReset">Spiel neu starten</button>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay hidden" id="settingsOverlay">
+  <div class="modal">
+    <h2>Einstellungen</h2>
+    <p class="lead">Lege Jahrgangsstufe, Bereiche und Spielregeln fest.</p>
+
+    <div class="field">
+      <label class="lbl" for="selGrade">Jahrgangsstufe</label>
+      <select class="inp" id="selGrade">
+        <option value="3">Jahrgangsstufe 3</option>
+        <option value="4">Jahrgangsstufe 4</option>
+      </select>
+      <div class="help">Die Jahrgangsstufe gibt vor, welche Bereiche verfügbar sind.</div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Bereiche</label>
+      <div class="checks" id="areaChecks"></div>
+      <div class="help">Strichrechnen (+ −) und Punktrechnen (· :) — beide ab Jgst. 3.</div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Schwierigkeit</label>
+      <div class="seg" id="segDiff" role="group">
+        <button data-v="easy">Nur leicht</button>
+        <button data-v="mixed">Gemischt</button>
+        <button data-v="hard">Nur schwer</button>
+      </div>
+      <div class="help">Schwer = größere Zahlen, Zehnerübergänge bzw. über das Einmaleins hinaus. Leicht zählt 1 Punkt (grün), schwer 2 (gelb).</div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label class="lbl" for="inpTime">Antwortzeit (Sekunden)</label>
+        <div class="stepper"><button data-step="time" data-d="-1">−</button><input id="inpTime" type="text" inputmode="numeric" value="8"><button data-step="time" data-d="1">+</button></div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="inpGoal">Zielpunktzahl</label>
+        <div class="stepper"><button data-step="goal" data-d="-1">−</button><input id="inpGoal" type="text" inputmode="numeric" value="10"><button data-step="goal" data-d="1">+</button></div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field"><label class="lbl" for="inpNameA">Name Team A</label><input class="inp" id="inpNameA" value="Team A" maxlength="18"></div>
+      <div class="field"><label class="lbl" for="inpNameB">Name Team B</label><input class="inp" id="inpNameB" value="Team B" maxlength="18"></div>
+    </div>
+
+    <div class="field">
+      <label class="switch"><input type="checkbox" id="chkSound" checked> Töne abspielen</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="cta ghost" id="btnSettingsClose">Schließen</button>
+      <button class="cta" id="btnSettingsSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Win overlay -->
+<div class="confetti hidden" id="confetti"></div>
+<div class="win hidden" id="winOverlay">
+  <div class="trophy">🏆</div>
+  <h2 id="winTitle">Team A gewinnt!</h2>
+  <div class="final" id="winFinal"></div>
+  <div class="win-actions">
+    <button class="cta" id="btnPlayAgain">Neues Spiel</button>
+    <button class="cta ghost" id="btnWinSettings">⚙ Einstellungen</button>
+  </div>
+</div>
+
+<script>
+/* ===== Generator Grundschule (inline) ===== */
+/* ============================================================
+   Kopfrechen-Duell Grundschule — Aufgaben-Generator (Jgst. 3/4)
+   Bereiche: strich (+ −), punkt (· :)  ·  Stufen: easy | hard
+   Rückgabe je Aufgabe: {html, answer, disp, hint, area, difficulty}
+   Alle Aufgaben sind im Kopf lösbar; Division geht stets glatt auf.
+   ============================================================ */
+(function (root) {
+  "use strict";
+
+  function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // Tausender-Gruppierung mit schmalem Leerzeichen ab 5 Stellen
+  function fmt(n) {
+    var neg = n < 0; var s = Math.abs(n).toString();
+    if (s.length >= 5) s = s.replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
+    return (neg ? "−" : "") + s;
+  }
+
+  function add(a, b) { return { html: fmt(a) + " + " + fmt(b), answer: a + b, disp: fmt(a + b) }; }
+  function sub(a, b) { return { html: fmt(a) + " − " + fmt(b), answer: a - b, disp: fmt(a - b) }; }
+  function mul(a, b) { return { html: fmt(a) + " · " + fmt(b), answer: a * b, disp: fmt(a * b) }; }
+  function div(a, b) { return { html: fmt(a) + " : " + fmt(b), answer: a / b, disp: fmt(a / b) }; }
+
+  function tens(lo, hi) { return randInt(lo, hi) * 10; }
+  function huns(lo, hi) { return randInt(lo, hi) * 100; }
+  function thous(lo, hi) { return randInt(lo, hi) * 1000; }
+  function tthous(lo, hi) { return randInt(lo, hi) * 10000; }
+  function crooked2() { var n = randInt(11, 89); if (n % 10 === 0) n += randInt(1, 4); return n; } // nicht durch 10 teilbar
+
+  /* ============================================================
+     STRICHRECHNEN (+ / −)
+     ============================================================ */
+  var STRICH = {
+    easy: function (grade) {
+      if (grade <= 3) {
+        // Zahlenraum bis 100
+        if (Math.random() < 0.5) {
+          var a = randInt(12, 79), b = randInt(8, Math.min(98 - a, 40));
+          if (b < 5) b = randInt(5, 9);
+          var o = add(a, b);
+          var ueb = (a % 10) + (b % 10) >= 10;
+          o.hint = a + " + " + b + " = " + o.answer + (ueb ? " (mit Zehnerübergang)" : "");
+          return done(o);
+        } else {
+          var a2 = randInt(24, 99), b2 = randInt(6, a2 - 4);
+          var o2 = sub(a2, b2);
+          var ueb2 = (a2 % 10) < (b2 % 10);
+          o2.hint = a2 + " − " + b2 + " = " + o2.answer + (ueb2 ? " (mit Zehnerübergang)" : "");
+          return done(o2);
+        }
+      }
+      // Jgst. 4 leicht: Zahlenraum bis 1000, glatte Zehnerzahlen
+      if (Math.random() < 0.5) {
+        var a = tens(13, 60), b = tens(12, Math.min(95 - a / 10, 39));
+        var o = add(a, b); o.hint = a + " + " + b + " = " + o.answer; return done(o);
+      } else {
+        var a2 = tens(45, 98), b2 = tens(8, a2 / 10 - 5);
+        var o2 = sub(a2, b2); o2.hint = a2 + " − " + b2 + " = " + o2.answer; return done(o2);
+      }
+    },
+    hard: function (grade) {
+      if (grade <= 3) {
+        // Zahlenraum bis 1000, krumme dreistellige Zahlen mit Übergang
+        if (Math.random() < 0.5) {
+          var a = randInt(234, 755), b = randInt(146, Math.min(998 - a, 540));
+          var o = add(a, b); o.hint = a + " + " + b + " = " + o.answer + " (Zehner-/Hunderterübergang)"; return done(o);
+        } else {
+          var a2 = randInt(412, 988), b2 = randInt(158, a2 - 120);
+          var o2 = sub(a2, b2); o2.hint = a2 + " − " + b2 + " = " + o2.answer + " (Übergang)"; return done(o2);
+        }
+      }
+      // Jgst. 4 schwer: Hunderter, Tausender, große runde Zahlen
+      var t = choice(["hundreds", "thousands", "biground", "biground"]);
+      if (t === "hundreds") {
+        if (Math.random() < 0.5) {
+          var a = huns(13, 55), b = huns(12, Math.min(98 - a / 100, 44));
+          var o = add(a, b); o.hint = (a / 100) + " H + " + (b / 100) + " H = " + (o.answer / 100) + " H → " + o.answer; return done(o);
+        } else {
+          var a2 = huns(42, 98), b2 = huns(8, a2 / 100 - 6);
+          var o2 = sub(a2, b2); o2.hint = (a2 / 100) + " H − " + (b2 / 100) + " H = " + (o2.answer / 100) + " H → " + o2.answer; return done(o2);
+        }
+      } else if (t === "thousands") {
+        if (Math.random() < 0.5) {
+          var a = thous(13, 55), b = thous(12, Math.min(98 - a / 1000, 44));
+          var o = add(a, b); o.hint = (a / 1000) + " T + " + (b / 1000) + " T = " + (o.answer / 1000) + " T → " + fmt(o.answer); return done(o);
+        } else {
+          var a2 = thous(42, 96), b2 = thous(8, a2 / 1000 - 6);
+          var o2 = sub(a2, b2); o2.hint = (a2 / 1000) + " T − " + (b2 / 1000) + " T = " + (o2.answer / 1000) + " T → " + fmt(o2.answer); return done(o2);
+        }
+      } else {
+        // große runde Zahlen bis ~900 000 (Zehntausender)
+        if (Math.random() < 0.5) {
+          var a = tthous(12, 50), b = tthous(11, Math.min(89 - a / 10000, 38));
+          var o = add(a, b); o.hint = (a / 10000) + " · 10000 + " + (b / 10000) + " · 10000 → " + fmt(o.answer); return done(o);
+        } else {
+          var a2 = tthous(40, 90), b2 = tthous(8, a2 / 10000 - 6);
+          var o2 = sub(a2, b2); o2.hint = (a2 / 10000) + " ZT − " + (b2 / 10000) + " ZT → " + fmt(o2.answer); return done(o2);
+        }
+      }
+    }
+  };
+
+  /* ============================================================
+     PUNKTRECHNEN (· / :)
+     ============================================================ */
+  var PUNKT = {
+    easy: function (grade) {
+      if (grade <= 3) {
+        // kleines Einmaleins
+        if (Math.random() < 0.5) {
+          var a = randInt(2, 10), b = randInt(2, 10);
+          var o = mul(a, b); o.hint = "Einmaleins: " + a + " · " + b + " = " + o.answer; return done(o);
+        } else {
+          var d = randInt(2, 10), q = randInt(2, 10), dd = d * q;
+          var o2 = div(dd, d); o2.hint = dd + " : " + d + " = " + q + ", da " + d + " · " + q + " = " + dd; return done(o2);
+        }
+      }
+      // Jgst. 4 leicht: 1×1 sicher + ·10 / ·100 + glatte Division
+      var t = choice(["ein", "zehn", "hundert", "div"]);
+      if (t === "ein") {
+        var a = randInt(3, 10), b = randInt(3, 10);
+        var o = mul(a, b); o.hint = "Einmaleins: " + a + " · " + b + " = " + o.answer; return done(o);
+      } else if (t === "zehn") {
+        var a2 = randInt(2, 9), b2 = tens(2, 9);
+        var o2 = mul(a2, b2); o2.hint = a2 + " · " + (b2 / 10) + " = " + (o2.answer / 10) + " → · 10 = " + o2.answer; return done(o2);
+      } else if (t === "hundert") {
+        var a3 = randInt(2, 9), b3 = huns(2, 9);
+        var o3 = mul(a3, b3); o3.hint = a3 + " · " + (b3 / 100) + " = " + (o3.answer / 100) + " → · 100 = " + o3.answer; return done(o3);
+      } else {
+        var dv = randInt(3, 9), q4 = tens(2, 9), dd4 = dv * q4;
+        var o4 = div(dd4, dv); o4.hint = dd4 + " : " + dv + " = " + q4 + ", da " + dv + " · " + q4 + " = " + dd4; return done(o4);
+      }
+    },
+    hard: function (grade) {
+      if (grade <= 3) {
+        var t = choice(["zweimalein", "zehner", "division"]);
+        if (t === "zweimalein") {
+          var a = randInt(11, 24), b = randInt(3, 7);
+          var o = mul(a, b);
+          o.hint = a + " · " + b + " = " + (Math.floor(a / 10) * 10) + "·" + b + " + " + (a % 10) + "·" + b +
+            " = " + (Math.floor(a / 10) * 10 * b) + " + " + ((a % 10) * b) + " = " + o.answer; return done(o);
+        } else if (t === "zehner") {
+          var a2 = randInt(3, 9), b2 = tens(3, 9);
+          var o2 = mul(a2, b2); o2.hint = a2 + " · " + (b2 / 10) + " = " + (o2.answer / 10) + " → · 10 = " + o2.answer; return done(o2);
+        } else {
+          var dv = randInt(4, 9), q = randInt(11, 19), dd = dv * q;
+          var o3 = div(dd, dv); o3.hint = dd + " : " + dv + " = " + q + ", da " + dv + " · " + q + " = " + dd; return done(o3);
+        }
+      }
+      // Jgst. 4 schwer
+      var t2 = choice(["zweistellig", "rundrund", "hundert", "div", "divrund"]);
+      if (t2 === "zweistellig") {
+        var a = randInt(12, 49), b = randInt(3, 9);
+        var o = mul(a, b);
+        o.hint = a + " · " + b + " = " + (Math.floor(a / 10) * 10) + "·" + b + " + " + (a % 10) + "·" + b +
+          " = " + (Math.floor(a / 10) * 10 * b) + " + " + ((a % 10) * b) + " = " + o.answer; return done(o);
+      } else if (t2 === "rundrund") {
+        var a2 = tens(2, 9), b2 = tens(2, 9);
+        var o2 = mul(a2, b2); o2.hint = (a2 / 10) + " · " + (b2 / 10) + " = " + (o2.answer / 100) + " → · 100 = " + fmt(o2.answer); return done(o2);
+      } else if (t2 === "hundert") {
+        var a3 = huns(2, 9), b3 = randInt(2, 9);
+        var o3 = mul(a3, b3); o3.hint = (a3 / 100) + " · " + b3 + " = " + (o3.answer / 100) + " → · 100 = " + fmt(o3.answer); return done(o3);
+      } else if (t2 === "div") {
+        var dv = randInt(3, 9), q = randInt(12, 39), dd = dv * q;
+        var o4 = div(dd, dv); o4.hint = dd + " : " + dv + " = " + q + ", da " + dv + " · " + q + " = " + dd; return done(o4);
+      } else {
+        var dv2 = randInt(3, 9), q2 = choice([tens(2, 9), huns(2, 9)]), dd2 = dv2 * q2;
+        var o5 = div(dd2, dv2); o5.hint = fmt(dd2) + " : " + dv2 + " = " + fmt(q2) + ", da " + dv2 + " · " + fmt(q2) + " = " + fmt(dd2); return done(o5);
+      }
+    }
+  };
+
+  function done(o) { return o; } // Platzhalter (erlaubt spätere Nachbearbeitung)
+
+  var GEN = { strich: STRICH, punkt: PUNKT };
+  var LABEL = { strich: "Strichrechnen (+ −)", punkt: "Punktrechnen (· :)" };
+
+  function makeProblem(areas, difficulties, grade) {
+    if (!areas || !areas.length) return null;
+    var g = Math.max(3, Math.min(4, grade | 0));
+    var area = choice(areas);
+    var diff = choice(difficulties && difficulties.length ? difficulties : ["easy"]);
+    var gen = GEN[area]; if (!gen) return null;
+    var fn = gen[diff] || gen.easy;
+    var o = fn(g);
+    o.area = area; o.difficulty = diff;
+    return o;
+  }
+
+  var api = { GEN: GEN, LABEL: LABEL, makeProblem: makeProblem, fmt: fmt };
+  root.GS = api;
+  root.makeProblem = makeProblem; // global, damit die App-Logik makeProblem(...) direkt nutzen kann
+  root.fmt = fmt;
+})(typeof window !== "undefined" ? window : this);
+
+/* ===== app.js (inline) ===== */
+/* ============================================================
+   Kopfrechen-Duell — Anwendungslogik
+   Erwartet: GEN, makeProblem, fmt, fracVal (aus generators.js)
+   ============================================================ */
+(function () {
+  "use strict";
+
+  /* ---------- Bereiche ---------- */
+  var AREA_FROM = { strich: 3, punkt: 3 };
+  var AREA_LABEL = {
+    strich: "Strichrechnen (+ −)", punkt: "Punktrechnen (· :)"
+  };
+  var AREA_ORDER = ["strich", "punkt"];
+
+  /* ---------- DOM ---------- */
+  var $ = function (id) { return document.getElementById(id); };
+  var teamA = $("teamA"), teamB = $("teamB");
+  var nameA = $("nameA"), nameB = $("nameB");
+  var scoreAEl = $("scoreA"), scoreBEl = $("scoreB");
+  var togoA = $("togoA"), togoB = $("togoB");
+  var stairsA = $("stairsA"), stairsB = $("stairsB");
+  var badge = $("badge"), badgeText = $("badgeText");
+  var areaLabel = $("areaLabel"), problemEl = $("problem");
+  var stage = document.querySelector(".stage");
+  var timerwrap = $("timerwrap"), timebar = $("timebar"), timenum = $("timenum");
+  var ansrow = $("ansrow"), ansph = $("ansph");
+  var keypad = $("keypad"), statusEl = $("status");
+  var solutionEl = $("solution"), revealInline = $("revealInline");
+  var btnNew = $("btnNew"), btnReset = $("btnReset");
+  var btnSolution = $("btnSolution"), btnSettings = $("btnSettings");
+  // Settings
+  var ov = $("settingsOverlay"), selGrade = $("selGrade"), areaChecks = $("areaChecks");
+  var segDiff = $("segDiff"), inpTime = $("inpTime"), inpGoal = $("inpGoal");
+  var inpNameA = $("inpNameA"), inpNameB = $("inpNameB"), chkSound = $("chkSound");
+  var btnSettingsClose = $("btnSettingsClose"), btnSettingsSave = $("btnSettingsSave");
+  // Win
+  var winOverlay = $("winOverlay"), winTitle = $("winTitle"), winFinal = $("winFinal");
+  var btnPlayAgain = $("btnPlayAgain"), btnWinSettings = $("btnWinSettings"), confetti = $("confetti");
+
+  var COL = { A: "#22d3ee", B: "#fb7185" };
+
+  /* ---------- Einstellungen ---------- */
+  var LS_KEY = "kopfrechen-duell-grundschule-v1";
+  function defaultAreasFor(grade) {
+    var a = {};
+    AREA_ORDER.forEach(function (k) { a[k] = grade >= AREA_FROM[k]; });
+    return a;
+  }
+  var settings = {
+    grade: 3,
+    areas: defaultAreasFor(3),
+    difficulty: "mixed",   // 'easy' | 'mixed' | 'hard'
+    answerTime: 8,
+    goal: 10,
+    ptsEasy: 1,
+    ptsHard: 2,
+    teamA: "Team A",
+    teamB: "Team B",
+    sound: true
+  };
+
+  function loadSettings() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (s && typeof s === "object") {
+        if (typeof s.grade === "number") settings.grade = clamp(s.grade, 3, 4);
+        if (s.areas && typeof s.areas === "object") {
+          AREA_ORDER.forEach(function (k) {
+            if (typeof s.areas[k] === "boolean") settings.areas[k] = s.areas[k];
+          });
+        }
+        if (s.difficulty) settings.difficulty = s.difficulty;
+        if (typeof s.answerTime === "number") settings.answerTime = clamp(s.answerTime, 3, 60);
+        if (typeof s.goal === "number") settings.goal = clamp(s.goal, 3, 30);
+        if (typeof s.teamA === "string") settings.teamA = s.teamA.slice(0, 18) || "Team A";
+        if (typeof s.teamB === "string") settings.teamB = s.teamB.slice(0, 18) || "Team B";
+        if (typeof s.sound === "boolean") settings.sound = s.sound;
+      }
+    } catch (e) { /* in-memory weiter */ }
+  }
+  function saveSettings() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- Hilfsfunktionen ---------- */
+  function clamp(v, lo, hi) { v = parseInt(v, 10); if (isNaN(v)) v = lo; return Math.max(lo, Math.min(hi, v)); }
+  function diffsAllowed() {
+    if (settings.difficulty === "easy") return ["easy"];
+    if (settings.difficulty === "hard") return ["hard"];
+    return ["easy", "hard"];
+  }
+  function selectedAreas() {
+    return AREA_ORDER.filter(function (k) {
+      return settings.areas[k] && settings.grade >= AREA_FROM[k];
+    });
+  }
+
+  /* ---------- Spielzustand ---------- */
+  var phase = "idle";        // idle | ready | answering | resolved
+  var problem = null;        // {html, answer, hint, area, difficulty}
+  var active = null;         // 'A' | 'B'
+  var attempts = {};         // {A:bool, B:bool}
+  var scores = { A: 0, B: 0 };
+  var buf = "";              // Antwort-Puffer
+  var rafId = null, deadline = 0, totalMs = 0;
+
+  /* ============================================================
+     Aufgabe erstellen
+     ============================================================ */
+  function newProblem() {
+    if (winOverlay && !winOverlay.classList.contains("hidden")) return;
+    var areas = selectedAreas();
+    var diffs = diffsAllowed();
+    if (areas.length === 0) {
+      flashStatus("Bitte zuerst mindestens einen Bereich wählen (⚙ Einstellungen).", "bad");
+      return;
+    }
+    var p = makeProblem(areas, diffs, settings.grade);
+    if (!p) {
+      flashStatus("Für diese Auswahl konnte keine Aufgabe erzeugt werden.", "bad");
+      return;
+    }
+    problem = p;
+    buf = "";
+    active = null;
+    attempts = { A: false, B: false };
+    phase = "ready";
+    stopTimer();
+
+    // Stage zurücksetzen
+    problemEl.classList.remove("placeholder");
+    problemEl.innerHTML = '<span class="fit">' + p.html + '</span>';
+    fitProblem();
+    areaLabel.textContent = AREA_LABEL[p.area] || "";
+    var hard = p.difficulty === "hard";
+    badge.classList.toggle("easy", !hard);
+    badge.classList.toggle("hard", hard);
+    badgeText.textContent = hard
+      ? ("Schwer · " + settings.ptsHard + " Punkte")
+      : ("Leicht · " + settings.ptsEasy + " Punkt");
+    stage.style.removeProperty("--ac");
+
+    hide(timerwrap); hide(ansrow); hide(keypad); hide(solutionEl);
+    show(revealInline);
+    ansph.textContent = "Antwort eingeben …"; ansrow.classList.add("ph-only");
+    setStatus("Bereit — welches Team buzzert zuerst?", "neutral");
+
+    setBuzzable(true);
+    teamA.classList.remove("active", "dim", "flash");
+    teamB.classList.remove("active", "dim", "flash");
+    render();
+  }
+
+  /* ============================================================
+     Buzzern
+     ============================================================ */
+  function buzz(team) {
+    if (phase !== "ready") return;
+    if (!problem) return;
+    active = team;
+    attempts[team] = true;
+    phase = "answering";
+    buf = "";
+    beginAnswerUI(team);
+    sound("buzz");
+    startTimer();
+    render();
+  }
+
+  function beginAnswerUI(team) {
+    setBuzzable(false);
+    var other = team === "A" ? teamB : teamA;
+    var cur = team === "A" ? teamA : teamB;
+    cur.classList.add("active"); cur.classList.remove("dim");
+    other.classList.remove("active"); other.classList.add("dim");
+    stage.style.setProperty("--ac", COL[team]);
+    show(timerwrap); show(ansrow); show(keypad);
+    hide(solutionEl); show(revealInline);
+    buildKeypad();
+    renderAnswer();
+    var nm = team === "A" ? settings.teamA : settings.teamB;
+    setStatus(nm + " ist dran …", "neutral");
+  }
+
+  /* ============================================================
+     Timer (Countdown-Balken via requestAnimationFrame)
+     ============================================================ */
+  function startTimer() {
+    stopTimer();
+    totalMs = settings.answerTime * 1000;
+    deadline = now() + totalMs;
+    timebar.style.background = "var(--easy)";
+    tick();
+  }
+  function tick() {
+    var remain = deadline - now();
+    if (remain <= 0) {
+      timebar.style.width = "0%";
+      timenum.textContent = "0";
+      stopTimer();
+      onTimeout();
+      return;
+    }
+    var frac = remain / totalMs;
+    timebar.style.width = (frac * 100).toFixed(1) + "%";
+    timenum.textContent = Math.ceil(remain / 1000);
+    // Farbe grün -> gelb -> rot
+    timebar.style.background = frac > 0.5 ? "var(--easy)" : (frac > 0.25 ? "var(--hard)" : "var(--b)");
+    rafId = requestAnimationFrame(tick);
+  }
+  function stopTimer() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
+  function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+
+  function onTimeout() {
+    if (phase !== "answering") return;
+    var nm = active === "A" ? settings.teamA : settings.teamB;
+    resolveWrong(nm + ": Zeit abgelaufen.");
+  }
+
+  /* ============================================================
+     Antwort: Tastenfeld + Parsing
+     ============================================================ */
+  var KEYS = ["7", "8", "9", "back", "4", "5", "6", "clear", "1", "2", "3", "0", "ok"];
+  function buildKeypad() {
+    if (keypad.dataset.built === "1") return;
+    keypad.innerHTML = "";
+    KEYS.forEach(function (k) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "key";
+      if (k === "ok") { b.className += " ok okwide"; b.textContent = "OK"; }
+      else if (k === "back") { b.className += " fn"; b.textContent = "⌫"; }
+      else if (k === "clear") { b.className += " fn"; b.textContent = "C"; }
+      else { b.textContent = k; }
+      b.addEventListener("click", function () { key(k); });
+      keypad.appendChild(b);
+    });
+    keypad.dataset.built = "1";
+  }
+
+  function key(k) {
+    if (phase !== "answering") return;
+    if (k === "ok") { submit(); return; }
+    if (k === "back") { buf = buf.slice(0, -1); renderAnswer(); return; }
+    if (k === "clear") { buf = ""; renderAnswer(); return; }
+    // Ziffer (führende Nullen vermeiden)
+    if (buf === "0") buf = "";
+    if (buf.length >= 7) return; // genug für Antworten bis ~1 Mio.
+    buf += k; renderAnswer();
+  }
+
+  function renderAnswer() {
+    if (buf === "") {
+      ansrow.innerHTML = '<span class="ph" id="ansph">Antwort eingeben …</span>';
+    } else {
+      ansrow.textContent = buf;
+    }
+  }
+
+  function parseAnswer(str) {
+    str = String(str).trim().replace(/[\s\u202F\u00A0]/g, "");
+    if (str === "" || str === "-") return NaN;
+    var v = parseInt(str, 10);
+    return isFinite(v) ? v : NaN;
+  }
+
+  function submit() {
+    if (phase !== "answering" || !problem) return;
+    var val = parseAnswer(buf);
+    if (isNaN(val)) { flashStatus("Bitte eine gültige Zahl eingeben.", "bad"); return; }
+    if (Math.abs(val - problem.answer) < 1e-6) resolveCorrect();
+    else resolveWrong(null);
+  }
+
+  /* ============================================================
+     Auswertung
+     ============================================================ */
+  function resolveCorrect() {
+    stopTimer();
+    phase = "resolved";
+    var team = active;
+    var pts = problem.difficulty === "hard" ? settings.ptsHard : settings.ptsEasy;
+    scores[team] += pts;
+    var nm = team === "A" ? settings.teamA : settings.teamB;
+    setStatus("Richtig! +" + pts + " für " + nm + " 🎉", "good");
+    sound("correct");
+    flashTeam(team);
+    revealSolution(false);
+    render();
+    if (scores[team] >= settings.goal) {
+      setTimeout(function () { showWin(team); }, 650);
+    }
+  }
+
+  function resolveWrong(reasonMsg) {
+    stopTimer();
+    sound("wrong");
+    var failed = active;
+    var failedNm = failed === "A" ? settings.teamA : settings.teamB;
+    var other = failed === "A" ? "B" : "A";
+    var base = reasonMsg || (failedNm + ": leider falsch.");
+
+    if (!attempts[other]) {
+      // Gegner darf jetzt übernehmen
+      var otherNm = other === "A" ? settings.teamA : settings.teamB;
+      setStatus(base + " — " + otherNm + " darf jetzt antworten!", "bad");
+      flashTeam(failed);
+      active = other;
+      attempts[other] = true;
+      phase = "answering";
+      buf = "";
+      setTimeout(function () {
+        if (phase !== "answering") return;
+        beginAnswerUI(other);
+        startTimer();
+        render();
+      }, 900);
+    } else {
+      // Beide gescheitert -> Lösung zeigen, Runde beenden
+      phase = "resolved";
+      setStatus("Schade — niemand richtig.", "bad");
+      flashTeam(failed);
+      revealSolution(true);
+      render();
+    }
+  }
+
+  /* ---------- Lösung anzeigen ---------- */
+  function niceAnswer(p) {
+    var re = /-?\d+(?:[.,]\d+)?(?:\/\d+)?/g, m, best = null;
+    while ((m = re.exec(p.hint)) !== null) {
+      var tok = m[0];
+      var v = parseAnswer(tok);
+      if (!isNaN(v) && Math.abs(v - p.answer) < 1e-6) best = tok; // letzter Treffer gewinnt
+    }
+    if (best !== null) return best;
+    // Rückfall: numerisch deutsch formatieren
+    if (typeof fmt === "function") return fmt(p.answer);
+    return String(p.answer).replace(".", ",");
+  }
+
+  function revealSolution(emphasize) {
+    if (!problem) return;
+    var ans = problem.disp != null ? problem.disp : String(problem.answer);
+    solutionEl.innerHTML =
+      '<div style="font-size:1.15em">Lösung: <b>' + problem.html + " = " + ans + "</b></div>" +
+      '<div style="margin-top:6px">Rechenweg: ' + escapeHTML(problem.hint) + "</div>";
+    show(solutionEl);
+    hide(revealInline);
+    hide(timerwrap); hide(keypad);
+    if (emphasize) hide(ansrow);
+    setBuzzable(false);
+    teamA.classList.remove("active"); teamB.classList.remove("active");
+    teamA.classList.remove("dim"); teamB.classList.remove("dim");
+  }
+
+  // Spielleiter: Lösung erzwingen / Runde beenden (keine Punkte)
+  function giveUp() {
+    if (!problem || phase === "idle") return;
+    if (phase === "resolved") { show(solutionEl); revealSolution(true); return; }
+    stopTimer();
+    phase = "resolved";
+    setStatus("Aufgelöst durch Spielleitung.", "neutral");
+    revealSolution(true);
+    render();
+  }
+
+  /* ============================================================
+     Treppe (SVG)
+     ============================================================ */
+  function buildStairs(score, goal, color, mirror) {
+    var W = 120, H = 100, pad = 5, topGap = 16;
+    var n = Math.max(1, goal);
+    var sw = (W - pad * 2) / n;
+    var unit = (H - pad * 2 - topGap) / n;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="100%" preserveAspectRatio="xMidYMax meet" aria-hidden="true">';
+    for (var i = 0; i < n; i++) {
+      var h = (i + 1) * unit;
+      var x0 = pad + i * sw;
+      var x = mirror ? (W - x0 - sw) : x0;
+      var y = H - pad - h;
+      var filled = i < score;
+      var fill = filled ? color : "rgba(255,255,255,.05)";
+      var stroke = filled ? color : "#2d3780";
+      svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + (sw - 1.6).toFixed(1) +
+        '" height="' + h.toFixed(1) + '" rx="2.5" fill="' + fill + '" stroke="' + stroke +
+        '" stroke-width="1" opacity="' + (filled ? "1" : ".6") + '"/>';
+    }
+    // Marker auf der obersten erreichten Stufe
+    if (score > 0) {
+      var idx = Math.min(score, n) - 1;
+      var hh = (idx + 1) * unit;
+      var mx0 = pad + idx * sw + sw / 2;
+      var mx = mirror ? (W - mx0) : mx0;
+      var my = H - pad - hh - 5;
+      svg += '<circle cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '" r="3.4" fill="#fff" stroke="' + color + '" stroke-width="1.6"/>';
+    }
+    // Pokal über der Zielstufe
+    var tx0 = pad + (n - 1) * sw + sw / 2;
+    var tx = mirror ? (W - tx0) : tx0;
+    var reached = score >= goal;
+    svg += '<text x="' + tx.toFixed(1) + '" y="' + (pad + 11) + '" font-size="14" text-anchor="middle" opacity="' +
+      (reached ? "1" : ".4") + '">🏆</text>';
+    svg += "</svg>";
+    return svg;
+  }
+
+  /* ============================================================
+     Rendern
+     ============================================================ */
+  function render() {
+    nameA.textContent = settings.teamA;
+    nameB.textContent = settings.teamB;
+    scoreAEl.textContent = scores.A;
+    scoreBEl.textContent = scores.B;
+    var ra = Math.max(0, settings.goal - scores.A);
+    var rb = Math.max(0, settings.goal - scores.B);
+    togoA.textContent = ra === 0 ? "Ziel erreicht!" : ("noch " + ra + " bis " + settings.goal);
+    togoB.textContent = rb === 0 ? "Ziel erreicht!" : ("noch " + rb + " bis " + settings.goal);
+    stairsA.innerHTML = buildStairs(scores.A, settings.goal, COL.A, false);
+    stairsB.innerHTML = buildStairs(scores.B, settings.goal, COL.B, true);
+  }
+
+  /* ---------- Aufgabe immer einzeilig einpassen ---------- */
+  function fitProblem() {
+    var fit = problemEl.querySelector(".fit");
+    if (!fit) return;
+    fit.style.transform = "none";
+    var run = function () {
+      fit.style.transform = "none";
+      var avail = problemEl.clientWidth;
+      var w = fit.getBoundingClientRect().width;
+      if (avail > 0 && w > avail) fit.style.transform = "scale(" + (avail / w * 0.98).toFixed(4) + ")";
+    };
+    if (window.requestAnimationFrame) requestAnimationFrame(run); else run();
+  }
+  window.addEventListener("resize", function () { fitProblem(); });
+
+  /* ---------- Status & Effekte ---------- */
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = "status " + (kind || "neutral");
+  }
+  var flashTimer = null;
+  function flashStatus(msg, kind) {
+    var prev = statusEl.textContent, prevC = statusEl.className;
+    setStatus(msg, kind);
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () {
+      if (statusEl.textContent === msg) { statusEl.textContent = prev; statusEl.className = prevC; }
+    }, 1800);
+  }
+  function flashTeam(team) {
+    var el = team === "A" ? teamA : teamB;
+    el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  }
+  function setBuzzable(on) {
+    teamA.classList.toggle("buzzable", on);
+    teamB.classList.toggle("buzzable", on);
+  }
+  function show(el) { el.classList.remove("hidden"); }
+  function hide(el) { el.classList.add("hidden"); }
+  function escapeHTML(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* ============================================================
+     Sieg
+     ============================================================ */
+  function showWin(team) {
+    var nm = team === "A" ? settings.teamA : settings.teamB;
+    winTitle.textContent = nm + " gewinnt!";
+    winFinal.innerHTML = '<span class="pa">' + settings.teamA + " " + scores.A + "</span>" +
+      " &nbsp;:&nbsp; " + '<span class="pb">' + settings.teamB + " " + scores.B + "</span>";
+    show(winOverlay);
+    sound("win");
+    runConfetti(team);
+  }
+  function resetGame() {
+    scores = { A: 0, B: 0 };
+    problem = null; active = null; phase = "idle"; buf = "";
+    attempts = { A: false, B: false };
+    stopTimer();
+    hide(winOverlay); clearConfetti();
+    problemEl.classList.add("placeholder");
+    problemEl.textContent = "Tippe auf »Neue Aufgabe«, um zu starten.";
+    areaLabel.textContent = "";
+    badge.classList.add("easy"); badge.classList.remove("hard");
+    badgeText.textContent = "Leicht · " + settings.ptsEasy + " Punkt";
+    hide(timerwrap); hide(ansrow); hide(keypad); hide(solutionEl); hide(revealInline);
+    stage.style.removeProperty("--ac");
+    teamA.classList.remove("active", "dim", "flash");
+    teamB.classList.remove("active", "dim", "flash");
+    setBuzzable(false);
+    setStatus("Neues Spiel — viel Erfolg!", "neutral");
+    render();
+  }
+
+  /* ---------- Konfetti ---------- */
+  function runConfetti(team) {
+    clearConfetti();
+    show(confetti);
+    var cols = ["#22d3ee", "#fb7185", "#34d399", "#fbbf24", "#a78bfa", "#fff"];
+    var N = 90;
+    for (var i = 0; i < N; i++) {
+      var s = document.createElement("i");
+      s.style.left = (Math.random() * 100) + "%";
+      s.style.background = cols[(Math.random() * cols.length) | 0];
+      s.style.animationDuration = (2.4 + Math.random() * 2.2) + "s";
+      s.style.animationDelay = (Math.random() * 0.6) + "s";
+      s.style.transform = "rotate(" + (Math.random() * 360) + "deg)";
+      confetti.appendChild(s);
+    }
+    if (confetti._t) clearTimeout(confetti._t);
+    confetti._t = setTimeout(clearConfetti, 5200);
+  }
+  function clearConfetti() {
+    if (confetti._t) { clearTimeout(confetti._t); confetti._t = null; }
+    confetti.innerHTML = ""; hide(confetti);
+  }
+
+  /* ============================================================
+     Audio (Web Audio API, geschützt)
+     ============================================================ */
+  var actx = null;
+  function ensureAudio() {
+    if (!settings.sound) return null;
+    try {
+      if (!actx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        actx = new AC();
+      }
+      if (actx.state === "suspended") actx.resume();
+    } catch (e) { actx = null; }
+    return actx;
+  }
+  function tone(freq, start, dur, type, gain) {
+    if (!actx) return;
+    try {
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || "sine"; o.frequency.value = freq;
+      var t0 = actx.currentTime + start;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(gain || 0.18, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) { /* ignore */ }
+  }
+  function sound(kind) {
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    if (kind === "buzz") { tone(440, 0, 0.12, "square", 0.16); tone(330, 0.05, 0.12, "square", 0.12); }
+    else if (kind === "correct") { tone(660, 0, 0.12, "sine", 0.18); tone(880, 0.10, 0.16, "sine", 0.18); tone(1175, 0.20, 0.20, "sine", 0.16); }
+    else if (kind === "wrong") { tone(220, 0, 0.22, "sawtooth", 0.16); tone(165, 0.12, 0.26, "sawtooth", 0.14); }
+    else if (kind === "win") {
+      var seq = [523, 659, 784, 1047], i;
+      for (i = 0; i < seq.length; i++) tone(seq[i], i * 0.13, 0.20, "triangle", 0.18);
+      tone(1319, 0.55, 0.5, "triangle", 0.16);
+    }
+  }
+
+  /* ============================================================
+     Einstellungen: Formular
+     ============================================================ */
+  function buildAreaChecks() {
+    areaChecks.innerHTML = "";
+    AREA_ORDER.forEach(function (k) {
+      var avail = settings.grade >= AREA_FROM[k];
+      var lab = document.createElement("label");
+      lab.className = "chk" + (avail ? "" : " disabled");
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.dataset.area = k;
+      cb.disabled = !avail;
+      cb.checked = avail && !!settings.areas[k];
+      cb.addEventListener("change", function () {
+        settings.areas[k] = cb.checked;
+      });
+      var span = document.createElement("span");
+      span.textContent = AREA_LABEL[k] + (avail ? "" : " · ab Jgst. " + AREA_FROM[k]);
+      lab.appendChild(cb); lab.appendChild(span);
+      areaChecks.appendChild(lab);
+    });
+  }
+  function syncDiffSeg() {
+    Array.prototype.forEach.call(segDiff.querySelectorAll("button"), function (b) {
+      b.classList.toggle("on", b.dataset.v === settings.difficulty);
+    });
+  }
+  function syncSettingsForm() {
+    selGrade.value = String(settings.grade);
+    buildAreaChecks();
+    syncDiffSeg();
+    inpTime.value = settings.answerTime;
+    inpGoal.value = settings.goal;
+    inpNameA.value = settings.teamA;
+    inpNameB.value = settings.teamB;
+    chkSound.checked = settings.sound;
+  }
+  function openSettings() { syncSettingsForm(); show(ov); hide(winOverlay); }
+  function closeSettings() { hide(ov); }
+  function saveFromForm() {
+    settings.answerTime = clamp(inpTime.value, 3, 60);
+    settings.goal = clamp(inpGoal.value, 3, 30);
+    settings.teamA = (inpNameA.value || "Team A").slice(0, 18);
+    settings.teamB = (inpNameB.value || "Team B").slice(0, 18);
+    settings.sound = !!chkSound.checked;
+    // Bereiche wurden live in settings.areas gepflegt; ungültige (zu hohe Jgst.) säubern
+    AREA_ORDER.forEach(function (k) {
+      if (settings.grade < AREA_FROM[k]) settings.areas[k] = false;
+    });
+    saveSettings();
+    closeSettings();
+    render();
+    if (phase === "idle") setStatus("Einstellungen gespeichert. Bereit für die erste Aufgabe!", "neutral");
+  }
+
+  /* ============================================================
+     Event-Verdrahtung
+     ============================================================ */
+  // Buzzer
+  teamA.addEventListener("click", function () { buzz("A"); });
+  teamB.addEventListener("click", function () { buzz("B"); });
+  [["A", teamA], ["B", teamB]].forEach(function (pair) {
+    pair[1].addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); buzz(pair[0]); }
+    });
+  });
+
+  // Steuerung unten / oben
+  btnNew.addEventListener("click", newProblem);
+  btnReset.addEventListener("click", function () {
+    if (scores.A === 0 && scores.B === 0 && phase === "idle") { resetGame(); return; }
+    if (confirmReset()) resetGame();
+  });
+  function confirmReset() {
+    try { return window.confirm("Spiel wirklich neu starten? Alle Punkte werden zurückgesetzt."); }
+    catch (e) { return true; }
+  }
+  btnSolution.addEventListener("click", giveUp);
+  revealInline.addEventListener("click", giveUp);
+  btnSettings.addEventListener("click", openSettings);
+
+  // Einstellungen
+  selGrade.addEventListener("change", function () {
+    settings.grade = clamp(selGrade.value, 3, 4);
+    // verfügbare Bereiche automatisch aktivieren, nicht verfügbare deaktivieren
+    AREA_ORDER.forEach(function (k) {
+      if (settings.grade < AREA_FROM[k]) settings.areas[k] = false;
+      else if (settings.areas[k] === undefined) settings.areas[k] = true;
+    });
+    // neu verfügbare Bereiche aktiv vorschlagen
+    AREA_ORDER.forEach(function (k) {
+      if (settings.grade >= AREA_FROM[k] && settings.grade === AREA_FROM[k]) settings.areas[k] = true;
+    });
+    buildAreaChecks();
+  });
+  Array.prototype.forEach.call(segDiff.querySelectorAll("button"), function (b) {
+    b.addEventListener("click", function () { settings.difficulty = b.dataset.v; syncDiffSeg(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-step]"), function (b) {
+    b.addEventListener("click", function () {
+      var which = b.dataset.step, d = parseInt(b.dataset.d, 10);
+      if (which === "time") { inpTime.value = clamp(parseInt(inpTime.value, 10) + d, 3, 60); }
+      else if (which === "goal") { inpGoal.value = clamp(parseInt(inpGoal.value, 10) + d, 3, 30); }
+    });
+  });
+  btnSettingsClose.addEventListener("click", closeSettings);
+  btnSettingsSave.addEventListener("click", saveFromForm);
+  ov.addEventListener("click", function (e) { if (e.target === ov) closeSettings(); });
+
+  // Win
+  btnPlayAgain.addEventListener("click", resetGame);
+  btnWinSettings.addEventListener("click", openSettings);
+
+  // Physische Tastatur
+  document.addEventListener("keydown", function (e) {
+    // Einstellungen offen? nichts abfangen
+    if (!ov.classList.contains("hidden")) return;
+    if (!winOverlay.classList.contains("hidden")) {
+      if (e.key === "Enter") { e.preventDefault(); resetGame(); }
+      return;
+    }
+    if (phase === "ready") {
+      var t = e.key.toLowerCase();
+      if (t === "a") { e.preventDefault(); buzz("A"); }
+      else if (t === "b") { e.preventDefault(); buzz("B"); }
+      else if (e.key === "Enter") { /* nichts */ }
+      return;
+    }
+    if (phase === "answering") {
+      if (e.key >= "0" && e.key <= "9") { e.preventDefault(); key(e.key); }
+      else if (e.key === "Backspace") { e.preventDefault(); key("back"); }
+      else if (e.key === "Delete") { e.preventDefault(); key("clear"); }
+      else if (e.key === "Enter") { e.preventDefault(); key("ok"); }
+    }
+  });
+
+  // Audio bei erster Geste „aufwecken“
+  document.addEventListener("pointerdown", function once() {
+    ensureAudio();
+    document.removeEventListener("pointerdown", once);
+  }, { once: true });
+
+  /* ============================================================
+     Start
+     ============================================================ */
+  loadSettings();
+  syncSettingsForm();
+  resetGame();
+})();
+</script>
+</body>
+</html>
